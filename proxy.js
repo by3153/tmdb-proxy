@@ -1,34 +1,23 @@
-const TMDB_API_KEY = "ecb36f97893ed8c589fcedcc282dc15d";
-
 export default async function handler(req, res) {
-  const { type, path } = req.query;
-  let targetUrl;
+  const { pathname, searchParams } = new URL(req.url, `https://${req.headers.host}`);
+  const tmdbApiKey = process.env.TMDB_API_KEY;
+  if (!tmdbApiKey) return res.status(500).json({error:"TMDB_API_KEY 环境变量未配置"});
 
-  if (type === "api") {
-    // 代理 TMDB API
-    targetUrl = `https://api.themoviedb.org/3/${path}?api_key=${TMDB_API_KEY}`;
-    // 带上GET额外参数（FMovie查询时的query、language等）
-    const originQuery = new URLSearchParams(req.url.split('?')[1]);
-    originQuery.delete("type");
-    originQuery.delete("path");
-    const extra = originQuery.toString();
-    if(extra) targetUrl += "&" + extra;
-  } else if (type === "image") {
-    // 代理海报图片 image.tmdb.org
-    targetUrl = `https://image.tmdb.org/t/${path}`;
-  } else {
-    return res.status(400).send("Bad type");
+  // 去掉 /api 前缀，转发到 TMDB 官方接口
+  const tmdbPath = pathname.replace(/^\/api/, "");
+  const tmdbUrl = new URL(`https://api.themoviedb.org/3${tmdbPath}`);
+  tmdbUrl.searchParams.set("api_key", tmdbApiKey);
+
+  // 把原请求的查询参数覆盖进去（比如你url里手动写的api_key会被环境变量覆盖）
+  for(const [k,v] of searchParams) {
+    if(k !== "api_key") tmdbUrl.searchParams.set(k, v);
   }
 
   try {
-    const response = await fetch(targetUrl);
-    const buf = await response.arrayBuffer();
-    // 复制响应头
-    for (const [k, v] of response.headers) {
-      res.setHeader(k, v);
-    }
-    res.status(response.status).end(Buffer.from(buf));
-  } catch (err) {
-    res.status(500).send("Proxy Error:" + err.message);
+    const resp = await fetch(tmdbUrl.toString());
+    const data = await resp.json();
+    res.status(resp.status).json(data);
+  } catch (e) {
+    res.status(500).json({error:"代理请求失败", detail:e.message});
   }
 }
