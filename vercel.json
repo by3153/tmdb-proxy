@@ -1,12 +1,13 @@
 {
+  "functions": {
+    "index.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/proxy?type=api&path=:path*"
-    },
-    {
-      "source": "/image/:path*",
-      "destination": "/api/proxy?type=image&path=:path*"
+      "source": "/api/(.*)",
+      "destination": "/index.js"
     }
   ]
 }
