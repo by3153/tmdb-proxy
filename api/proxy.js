@@ -17,9 +17,13 @@ export default async function handler(req, res) {
   // 强制使用环境变量的api_key，覆盖url里传入的
   tmdbUrl.searchParams.set("api_key", tmdbApiKey);
 
+  console.log("=== 转发到 TMDB 的完整 URL ===");
+  console.log(tmdbUrl.toString());
+  
   try {
     const resp = await fetch(tmdbUrl.toString());
     const data = await resp.json();
+    console.log("=== TMDB 响应 status ===", resp.status);
     return res.status(resp.status).json(data);
   } catch (err) {
     return res.status(500).json({
