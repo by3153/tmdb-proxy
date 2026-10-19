@@ -17,6 +17,11 @@ export default async function handler(req, res) {
   // 强制使用环境变量的api_key，覆盖url里传入的
   tmdbUrl.searchParams.set("api_key", tmdbApiKey);
 
+  // 【临时调试】把转发的真实 URL 返回出来
+  if (path.includes("search")) {
+    return res.status(200).json({ debug_tmdb_url: tmdbUrl.toString() });
+  }
+  
   console.log("=== 转发到 TMDB 的完整 URL ===");
   console.log(tmdbUrl.toString());
   
